@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class=""> <!-- A classe 'dark' será adicionada aqui -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Aplicações</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'brand': {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd',
+                            300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9',
+                            600: '#0284c7', 700: '#0369a1', 800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            transition: background 0.4s ease;
+        }
+        
+        html.dark body {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        }
+        
+        .app-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .app-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .floating-action {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 40;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+        
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+        }
+        
+        .notification {
+            position: fixed; top: 2rem; right: 2rem; z-index: 50; padding: 1rem 1.5rem;
+            border-radius: 0.75rem; color: white; font-weight: 500;
+            transform: translateX(120%); transition: transform 0.4s ease-in-out;
+        }
+        
+        .notification.show { transform: translateX(0); }
+        .notification.success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .notification.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        
+        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Navbar -->
+    <nav class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky top-0 z-30 border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">P</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 dark:text-white">Painel de Aplicações</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Seu hub de ferramentas</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" id="searchInput" placeholder="Buscar aplicação..." class="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent rounded-lg text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 w-64">
+                    </div>
+                    <button id="themeToggle" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-transform hover:scale-110">🌙</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-6 py-8">
+        <div id="dashboardGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"></div>
+
+        <div id="emptyState" class="text-center py-16 hidden"><div class="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6"><svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div><h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Nenhuma aplicação encontrada</h3><p class="text-gray-500 dark:text-gray-400 mb-6">Comece a adicionar os links das suas aplicações</p><button id="emptyStateBtn" class="bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-brand-700 transition-colors">Adicionar Aplicação</button></div>
+        
+        <footer id="signature" class="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm"></footer>
+    </div>
+
+    <button id="addAppBtn" class="floating-action w-16 h-16 rounded-full text-white shadow-lg flex items-center justify-center"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg></button>
+
+    <div id="modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-2xl animate-fade-in">
+            <div class="flex items-center justify-between mb-8"><h2 id="modalTitle" class="text-3xl font-bold text-gray-800 dark:text-white">Nova Aplicação</h2><button id="closeModalBtn" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"><svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form id="appForm" class="space-y-6"><input type="hidden" id="appId"><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label for="appTitle" class="block text-gray-700 dark:text-gray-300 font-semibold mb-3">Título da Aplicação</label><input type="text" id="appTitle" class="w-full p-4 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all" required></div><div><label for="appCategory" class="block text-gray-700 dark:text-gray-300 font-semibold mb-3">Categoria</label><select id="appCategory" class="w-full p-4 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"><option value="ferramentas">🛠️ Ferramentas</option><option value="financas">💰 Finanças</option><option value="saude">❤️ Saúde</option><option value="variedades">🧩 Variedades</option></select></div></div><div><label for="appDescription" class="block text-gray-700 dark:text-gray-300 font-semibold mb-3">Descrição</label><textarea id="appDescription" rows="4" class="w-full p-4 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all" required></textarea></div><div><label for="appLink" class="block text-gray-700 dark:text-gray-300 font-semibold mb-3">Link (URL)</label><input type="url" id="appLink" class="w-full p-4 border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all" required placeholder="https://..."></div><div class="flex justify-end gap-4 pt-6"><button type="button" id="cancelBtn" class="px-8 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancelar</button><button type="submit" class="px-8 py-3 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-semibold rounded-xl hover:from-brand-600 hover:to-brand-800 transition-all">Salvar Aplicação</button></div></form>
+        </div>
+    </div>
+
+    <script type="module">
+        let initializeApp, getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken;
+        
+        // --- CORREÇÃO: A verificação agora é mais robusta ---
+        const isFirebaseAvailable = typeof __firebase_config !== 'undefined' && __firebase_config !== '' && __firebase_config !== '{}';
+
+        if (isFirebaseAvailable) {
+            try {
+                ({ initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"));
+                ({ getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"));
+                ({ getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"));
+            } catch (e) {
+                console.error("Falha ao importar módulos do Firebase. A usar armazenamento local.", e);
+                isFirebaseAvailable = false;
+            }
+        }
+
+        const elements = {
+            addAppBtn: document.getElementById('addAppBtn'), emptyStateBtn: document.getElementById('emptyStateBtn'),
+            modal: document.getElementById('modal'), modalTitle: document.getElementById('modalTitle'),
+            closeModalBtn: document.getElementById('closeModalBtn'), cancelBtn: document.getElementById('cancelBtn'),
+            appForm: document.getElementById('appForm'), dashboardGrid: document.getElementById('dashboardGrid'),
+            emptyState: document.getElementById('emptyState'), searchInput: document.getElementById('searchInput'),
+            themeToggle: document.getElementById('themeToggle'), signature: document.getElementById('signature')
+        };
+        const htmlEl = document.documentElement;
+        const formInputs = {
+            id: document.getElementById('appId'), title: document.getElementById('appTitle'),
+            description: document.getElementById('appDescription'), link: document.getElementById('appLink'),
+            category: document.getElementById('appCategory')
+        };
+
+        let apps = [];
+        let searchTerm = '';
+        let userId = null;
+        let appsCollectionRef;
+        let db, auth;
+        const STORAGE_KEY = 'appDashboardLinks';
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 400);
+            }, 3000);
+        }
+
+        const categoryConfig = {
+            ferramentas: { icon: '🛠️', name: 'Ferramentas' },
+            financas: { icon: '💰', name: 'Finanças' },
+            saude: { icon: '❤️', name: 'Saúde' },
+            variedades: { icon: '🧩', name: 'Variedades' }
+        };
+
+        function renderApps() {
+            const filteredApps = apps.filter(app => 
+                app.title.toLowerCase().includes(searchTerm) || app.description.toLowerCase().includes(searchTerm)
+            );
+            
+            elements.dashboardGrid.innerHTML = '';
+            
+            if (filteredApps.length === 0) {
+                elements.emptyState.classList.remove('hidden');
+                elements.dashboardGrid.classList.add('hidden');
+            } else {
+                elements.emptyState.classList.add('hidden');
+                elements.dashboardGrid.classList.remove('hidden');
+                filteredApps.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'app-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in flex flex-col';
+                    const createdAt = app.createdAt?.toDate ? app.createdAt.toDate() : new Date(app.createdAt);
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center text-white text-xl">${categoryConfig[app.category]?.icon || '🔗'}</div>
+                                    <div><h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">${app.title}</h3><p class="text-sm font-medium text-brand-600 dark:text-brand-400">${categoryConfig[app.category]?.name || 'Categoria'}</p></div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="edit-btn w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors" data-id="${app.id}" title="Editar"><svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                                    <button class="delete-btn w-8 h-8 rounded-lg bg-red-100 dark:bg-red-700/50 hover:bg-red-200 dark:hover:bg-red-700 flex items-center justify-center transition-colors" data-id="${app.id}" title="Excluir"><svg class="w-4 h-4 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">${app.description}</p>
+                        </div>
+                        <div class="mt-auto flex items-center justify-between">
+                            <a href="${app.link}" target="_blank" class="flex-1 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-semibold py-3 px-6 rounded-xl hover:from-brand-600 hover:to-brand-800 transition-all text-center">Acessar</a>
+                        </div>
+                    `;
+                    elements.dashboardGrid.appendChild(card);
+                });
+            }
+        }
+        
+        function openModal(app = null) {
+            elements.appForm.reset();
+            if (app) {
+                elements.modalTitle.textContent = 'Editar Aplicação';
+                formInputs.id.value = app.id;
+                formInputs.title.value = app.title;
+                formInputs.description.value = app.description;
+                formInputs.link.value = app.link;
+                formInputs.category.value = app.category || 'ferramentas';
+            } else {
+                elements.modalTitle.textContent = 'Nova Aplicação';
+                formInputs.id.value = '';
+            }
+            elements.modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            elements.modal.classList.add('hidden');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = formInputs.id.value;
+            const appData = {
+                title: formInputs.title.value.trim(), description: formInputs.description.value.trim(),
+                link: formInputs.link.value.trim(), category: formInputs.category.value,
+            };
+
+            if (isFirebaseAvailable) {
+                if (!userId) { showNotification('Erro: Utilizador não autenticado.', 'error'); return; }
+                try {
+                    if (id) {
+                        const appDocRef = doc(db, `artifacts/${appId}/users/${userId}/apps`, id);
+                        await updateDoc(appDocRef, appData);
+                        showNotification('Aplicação atualizada com sucesso!');
+                    } else {
+                        appData.createdAt = serverTimestamp();
+                        await addDoc(appsCollectionRef, appData);
+                        showNotification('Aplicação criada com sucesso!');
+                    }
+                } catch (error) {
+                    console.error("Erro ao salvar na nuvem: ", error);
+                    showNotification('Erro ao salvar.', 'error');
+                }
+            } else {
+                if (id) {
+                    const index = apps.findIndex(a => a.id == id);
+                    if (index > -1) {
+                        apps[index] = { ...apps[index], ...appData };
+                        showNotification('Aplicação atualizada com sucesso!');
+                    }
+                } else {
+                    appData.id = Date.now();
+                    appData.createdAt = new Date().toISOString();
+                    apps.unshift(appData);
+                    showNotification('Aplicação criada com sucesso!');
+                }
+                saveAppsLocally();
+                renderApps();
+            }
+            closeModal();
+        }
+
+        async function deleteApp(id) {
+            if (confirm('Tem a certeza que quer excluir esta aplicação?')) {
+                if (isFirebaseAvailable) {
+                    if (!userId) return;
+                    try {
+                        const appDocRef = doc(db, `artifacts/${appId}/users/${userId}/apps`, id);
+                        await deleteDoc(appDocRef);
+                        showNotification('Aplicação excluída.', 'success');
+                    } catch (error) {
+                        console.error("Erro ao excluir da nuvem: ", error);
+                        showNotification('Erro ao excluir.', 'error');
+                    }
+                } else {
+                    apps = apps.filter(a => a.id != id);
+                    saveAppsLocally();
+                    renderApps();
+                    showNotification('Aplicação excluída.', 'success');
+                }
+            }
+        }
+        
+        function setupRealtimeListener(uid) {
+            userId = uid;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            appsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/apps`);
+            const q = query(appsCollectionRef, orderBy('createdAt', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderApps();
+            }, (error) => {
+                console.error("Erro ao carregar: ", error);
+                showNotification('Não foi possível carregar as aplicações.', 'error');
+            });
+        }
+
+        function handleDashboardClick(e) {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (editBtn) {
+                const app = apps.find(a => a.id == editBtn.dataset.id);
+                openModal(app);
+            }
+            if (deleteBtn) {
+                deleteApp(deleteBtn.dataset.id);
+            }
+        }
+        
+        function saveAppsLocally() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        }
+
+        function loadAppsLocally() {
+            const savedApps = localStorage.getItem(STORAGE_KEY);
+            apps = savedApps ? JSON.parse(savedApps) : [];
+            renderApps();
+        }
+        
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                htmlEl.classList.add('dark');
+                elements.themeToggle.innerHTML = '☀️';
+            } else {
+                htmlEl.classList.remove('dark');
+                elements.themeToggle.innerHTML = '🌙';
+            }
+        }
+        function setSignature() {
+             elements.signature.textContent = `Feito por HAlexandre em 01/08/2025 às 17:45`;
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (isFirebaseAvailable) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        setupRealtimeListener(user.uid);
+                    } else {
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Falha na autenticação:", error);
+                            showNotification('Não foi possível conectar à base de dados.', 'error');
+                        }
+                    }
+                });
+            } else {
+                console.log("Firebase não configurado. A usar armazenamento local.");
+                loadAppsLocally();
+            }
+
+            [elements.addAppBtn, elements.emptyStateBtn].forEach(btn => btn.addEventListener('click', () => openModal()));
+            [elements.closeModalBtn, elements.cancelBtn].forEach(btn => btn.addEventListener('click', closeModal));
+            elements.modal.addEventListener('click', (e) => { if (e.target === elements.modal) closeModal(); });
+            elements.appForm.addEventListener('submit', handleFormSubmit);
+            elements.dashboardGrid.addEventListener('click', handleDashboardClick);
+            elements.searchInput.addEventListener('input', (e) => {
+                searchTerm = e.target.value.toLowerCase();
+                renderApps();
+            });
+            elements.themeToggle.addEventListener('click', () => {
+                htmlEl.classList.toggle('dark');
+                localStorage.setItem('theme', htmlEl.classList.contains('dark') ? 'dark' : 'light');
+                elements.themeToggle.innerHTML = htmlEl.classList.contains('dark') ? '☀️' : '🌙';
+            });
+
+            loadTheme();
+            setSignature();
+        });
+    </script>
+</body>
+</html>
