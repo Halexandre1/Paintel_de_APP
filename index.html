@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class=""> <!-- A classe 'dark' será adicionada aqui -->
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Aplicações</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,13 +29,13 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background-color: #f5f7fa;
             min-height: 100vh;
-            transition: background 0.4s ease;
+            transition: background-color 0.4s ease;
         }
         
         html.dark body {
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background-color: #0f2027;
         }
         
         .app-card {
@@ -91,9 +91,7 @@
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">P</span>
-                    </div>
+                    <img src="https://raw.githubusercontent.com/Halexandre1/PDF_PRO/main/HERBERT.jpg" alt="Logótipo" class="w-12 h-12 rounded-full object-cover border-2 border-brand-200 dark:border-brand-800">
                     <div>
                         <h1 class="text-xl font-bold text-gray-800 dark:text-white">Painel de Aplicações</h1>
                         <p class="text-gray-500 dark:text-gray-400 text-sm">Seu hub de ferramentas</p>
@@ -132,8 +130,7 @@
     <script type="module">
         let initializeApp, getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken;
         
-        // --- CORREÇÃO: A verificação agora é mais robusta ---
-        const isFirebaseAvailable = typeof __firebase_config !== 'undefined' && __firebase_config !== '' && __firebase_config !== '{}';
+        let isFirebaseAvailable = typeof __firebase_config !== 'undefined' && __firebase_config !== '' && __firebase_config !== '{}';
 
         if (isFirebaseAvailable) {
             try {
@@ -146,269 +143,315 @@
             }
         }
 
-        const elements = {
-            addAppBtn: document.getElementById('addAppBtn'), emptyStateBtn: document.getElementById('emptyStateBtn'),
-            modal: document.getElementById('modal'), modalTitle: document.getElementById('modalTitle'),
-            closeModalBtn: document.getElementById('closeModalBtn'), cancelBtn: document.getElementById('cancelBtn'),
-            appForm: document.getElementById('appForm'), dashboardGrid: document.getElementById('dashboardGrid'),
-            emptyState: document.getElementById('emptyState'), searchInput: document.getElementById('searchInput'),
-            themeToggle: document.getElementById('themeToggle'), signature: document.getElementById('signature')
-        };
-        const htmlEl = document.documentElement;
-        const formInputs = {
-            id: document.getElementById('appId'), title: document.getElementById('appTitle'),
-            description: document.getElementById('appDescription'), link: document.getElementById('appLink'),
-            category: document.getElementById('appCategory')
-        };
+        // --- Módulo de UI ---
+        const UI = {
+            dom: {
+                addAppBtn: document.getElementById('addAppBtn'), emptyStateBtn: document.getElementById('emptyStateBtn'),
+                modal: document.getElementById('modal'), modalTitle: document.getElementById('modalTitle'),
+                closeModalBtn: document.getElementById('closeModalBtn'), cancelBtn: document.getElementById('cancelBtn'),
+                appForm: document.getElementById('appForm'), dashboardGrid: document.getElementById('dashboardGrid'),
+                emptyState: document.getElementById('emptyState'), searchInput: document.getElementById('searchInput'),
+                themeToggle: document.getElementById('themeToggle'), signature: document.getElementById('signature'),
+                formInputs: {
+                    id: document.getElementById('appId'), title: document.getElementById('appTitle'),
+                    description: document.getElementById('appDescription'), link: document.getElementById('appLink'),
+                    category: document.getElementById('appCategory')
+                }
+            },
 
-        let apps = [];
-        let searchTerm = '';
-        let userId = null;
-        let appsCollectionRef;
-        let db, auth;
-        const STORAGE_KEY = 'appDashboardLinks';
+            categoryConfig: {
+                ferramentas: { icon: '🛠️', name: 'Ferramentas' },
+                financas: { icon: '💰', name: 'Finanças' },
+                saude: { icon: '❤️', name: 'Saúde' },
+                variedades: { icon: '🧩', name: 'Variedades' }
+            },
 
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 400);
-            }, 3000);
-        }
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.classList.add('show'), 100);
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => document.body.removeChild(notification), 400);
+                }, 3000);
+            },
 
-        const categoryConfig = {
-            ferramentas: { icon: '🛠️', name: 'Ferramentas' },
-            financas: { icon: '💰', name: 'Finanças' },
-            saude: { icon: '❤️', name: 'Saúde' },
-            variedades: { icon: '🧩', name: 'Variedades' }
-        };
+            renderApps(apps, searchTerm) {
+                const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const searchTokens = normalize(searchTerm).split(' ').filter(Boolean);
 
-        function renderApps() {
-            const filteredApps = apps.filter(app => 
-                app.title.toLowerCase().includes(searchTerm) || app.description.toLowerCase().includes(searchTerm)
-            );
-            
-            elements.dashboardGrid.innerHTML = '';
-            
-            if (filteredApps.length === 0) {
-                elements.emptyState.classList.remove('hidden');
-                elements.dashboardGrid.classList.add('hidden');
-            } else {
-                elements.emptyState.classList.add('hidden');
-                elements.dashboardGrid.classList.remove('hidden');
-                filteredApps.forEach(app => {
-                    const card = document.createElement('div');
-                    card.className = 'app-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in flex flex-col';
-                    const createdAt = app.createdAt?.toDate ? app.createdAt.toDate() : new Date(app.createdAt);
-                    card.innerHTML = `
-                        <div class="flex-grow">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center text-white text-xl">${categoryConfig[app.category]?.icon || '🔗'}</div>
-                                    <div><h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">${app.title}</h3><p class="text-sm font-medium text-brand-600 dark:text-brand-400">${categoryConfig[app.category]?.name || 'Categoria'}</p></div>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button class="edit-btn w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors" data-id="${app.id}" title="Editar"><svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
-                                    <button class="delete-btn w-8 h-8 rounded-lg bg-red-100 dark:bg-red-700/50 hover:bg-red-200 dark:hover:bg-red-700 flex items-center justify-center transition-colors" data-id="${app.id}" title="Excluir"><svg class="w-4 h-4 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
-                                </div>
-                            </div>
-                            <p class="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">${app.description}</p>
-                        </div>
-                        <div class="mt-auto flex items-center justify-between">
-                            <a href="${app.link}" target="_blank" class="flex-1 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-semibold py-3 px-6 rounded-xl hover:from-brand-600 hover:to-brand-800 transition-all text-center">Acessar</a>
-                        </div>
-                    `;
-                    elements.dashboardGrid.appendChild(card);
+                const filteredApps = apps.filter(app => {
+                    const appText = normalize(`${app.title} ${app.description}`);
+                    return searchTokens.every(token => appText.includes(token));
                 });
+                
+                this.dom.dashboardGrid.innerHTML = '';
+                
+                if (filteredApps.length === 0) {
+                    this.dom.emptyState.classList.remove('hidden');
+                    this.dom.dashboardGrid.classList.add('hidden');
+                } else {
+                    this.dom.emptyState.classList.add('hidden');
+                    this.dom.dashboardGrid.classList.remove('hidden');
+                    filteredApps.forEach(app => this.dom.dashboardGrid.appendChild(this.createAppCard(app)));
+                }
+            },
+
+            createAppCard(app) {
+                const card = document.createElement('div');
+                card.className = 'app-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in flex flex-col';
+                card.dataset.id = app.id;
+
+                card.innerHTML = `
+                    <div class="flex-grow">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center text-white text-xl">${this.categoryConfig[app.category]?.icon || '🔗'}</div>
+                                <div><h3 class="text-xl font-bold text-gray-800 dark:text-white mb-1">${app.title}</h3><p class="text-sm font-medium text-brand-600 dark:text-brand-400">${this.categoryConfig[app.category]?.name || 'Categoria'}</p></div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="edit-btn w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors" title="Editar"><i class="fas fa-pencil-alt text-gray-600 dark:text-gray-300 text-xs"></i></button>
+                                <button class="delete-btn w-8 h-8 rounded-lg bg-red-100 dark:bg-red-700/50 hover:bg-red-200 dark:hover:bg-red-700 flex items-center justify-center transition-colors" title="Excluir"><i class="fas fa-trash-alt text-red-600 dark:text-red-300 text-xs"></i></button>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">${app.description}</p>
+                    </div>
+                    <div class="mt-auto flex items-center justify-between gap-2">
+                        <a href="${app.link}" target="_blank" class="flex-1 bg-gradient-to-r from-brand-500 to-brand-700 text-white font-semibold py-3 px-6 rounded-xl hover:from-brand-600 hover:to-brand-800 transition-all text-center">Acessar</a>
+                        <button class="copy-btn w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors" title="Copiar Link"><i class="fas fa-copy text-gray-600 dark:text-gray-300"></i></button>
+                    </div>
+                `;
+                return card;
+            },
+
+            openModal(app = null) {
+                this.dom.appForm.reset();
+                if (app) {
+                    this.dom.modalTitle.textContent = 'Editar Aplicação';
+                    this.dom.formInputs.id.value = app.id;
+                    this.dom.formInputs.title.value = app.title;
+                    this.dom.formInputs.description.value = app.description;
+                    this.dom.formInputs.link.value = app.link;
+                    this.dom.formInputs.category.value = app.category || 'ferramentas';
+                } else {
+                    this.dom.modalTitle.textContent = 'Nova Aplicação';
+                    this.dom.formInputs.id.value = '';
+                }
+                this.dom.modal.classList.remove('hidden');
+            },
+
+            closeModal() { this.dom.modal.classList.add('hidden'); },
+            
+            loadTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                    this.dom.themeToggle.innerHTML = '☀️';
+                } else {
+                    this.dom.themeToggle.innerHTML = '🌙';
+                }
+            },
+            
+            setSignature() {
+                this.dom.signature.innerHTML = `<p>Feito por HAlexandre © ${new Date().getFullYear()}</p>`;
             }
-        }
-        
-        function openModal(app = null) {
-            elements.appForm.reset();
-            if (app) {
-                elements.modalTitle.textContent = 'Editar Aplicação';
-                formInputs.id.value = app.id;
-                formInputs.title.value = app.title;
-                formInputs.description.value = app.description;
-                formInputs.link.value = app.link;
-                formInputs.category.value = app.category || 'ferramentas';
-            } else {
-                elements.modalTitle.textContent = 'Nova Aplicação';
-                formInputs.id.value = '';
-            }
-            elements.modal.classList.remove('hidden');
-        }
+        };
 
-        function closeModal() {
-            elements.modal.classList.add('hidden');
-        }
+        // --- Módulo de Armazenamento ---
+        const Storage = {
+            db: null, auth: null, userId: null, appsCollectionRef: null,
+            apps: [], STORAGE_KEY: 'appDashboardLinks',
 
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            const id = formInputs.id.value;
-            const appData = {
-                title: formInputs.title.value.trim(), description: formInputs.description.value.trim(),
-                link: formInputs.link.value.trim(), category: formInputs.category.value,
-            };
+            async init() {
+                if (isFirebaseAvailable) {
+                    try {
+                        const firebaseConfig = JSON.parse(__firebase_config);
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                        const app = initializeApp(firebaseConfig);
+                        this.db = getFirestore(app);
+                        this.auth = getAuth(app);
+                        
+                        return new Promise(resolve => {
+                            onAuthStateChanged(this.auth, async (user) => {
+                                if (user) {
+                                    this.userId = user.uid;
+                                    this.appsCollectionRef = collection(this.db, `artifacts/${appId}/users/${this.userId}/apps`);
+                                    this.setupRealtimeListener();
+                                    resolve();
+                                } else {
+                                    await this.signIn();
+                                }
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Falha na inicialização do Firebase:", error);
+                        this.loadLocally();
+                    }
+                } else {
+                    console.log("Firebase não configurado. A usar armazenamento local.");
+                    this.loadLocally();
+                }
+            },
 
-            if (isFirebaseAvailable) {
-                if (!userId) { showNotification('Erro: Utilizador não autenticado.', 'error'); return; }
+            async signIn() {
                 try {
-                    if (id) {
-                        const appDocRef = doc(db, `artifacts/${appId}/users/${userId}/apps`, id);
-                        await updateDoc(appDocRef, appData);
-                        showNotification('Aplicação atualizada com sucesso!');
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(this.auth, __initial_auth_token);
                     } else {
-                        appData.createdAt = serverTimestamp();
-                        await addDoc(appsCollectionRef, appData);
-                        showNotification('Aplicação criada com sucesso!');
+                        await signInAnonymously(this.auth);
                     }
                 } catch (error) {
-                    console.error("Erro ao salvar na nuvem: ", error);
-                    showNotification('Erro ao salvar.', 'error');
+                    console.error("Falha na autenticação:", error);
+                    UI.showNotification('Não foi possível conectar à base de dados.', 'error');
+                    this.loadLocally();
                 }
-            } else {
-                if (id) {
-                    const index = apps.findIndex(a => a.id == id);
-                    if (index > -1) {
-                        apps[index] = { ...apps[index], ...appData };
-                        showNotification('Aplicação atualizada com sucesso!');
+            },
+
+            setupRealtimeListener() {
+                const q = query(this.appsCollectionRef, orderBy('createdAt', 'desc'));
+                onSnapshot(q, (snapshot) => {
+                    this.apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.render();
+                }, (error) => {
+                    console.error("Erro ao carregar:", error);
+                    UI.showNotification('Não foi possível carregar as aplicações.', 'error');
+                });
+            },
+
+            async saveApp(appData) {
+                const id = appData.id;
+                delete appData.id;
+
+                if (isFirebaseAvailable && this.userId) {
+                    try {
+                        if (id) {
+                            await updateDoc(doc(this.appsCollectionRef, id), appData);
+                            UI.showNotification('Aplicação atualizada com sucesso!');
+                        } else {
+                            appData.createdAt = serverTimestamp();
+                            await addDoc(this.appsCollectionRef, appData);
+                            UI.showNotification('Aplicação criada com sucesso!');
+                        }
+                    } catch (error) {
+                        console.error("Erro ao salvar na nuvem: ", error);
+                        UI.showNotification('Erro ao salvar.', 'error');
                     }
                 } else {
-                    appData.id = Date.now();
-                    appData.createdAt = new Date().toISOString();
-                    apps.unshift(appData);
-                    showNotification('Aplicação criada com sucesso!');
+                    if (id) {
+                        const index = this.apps.findIndex(a => a.id == id);
+                        if (index > -1) this.apps[index] = { ...this.apps[index], ...appData, id };
+                    } else {
+                        appData.id = Date.now();
+                        appData.createdAt = new Date().toISOString();
+                        this.apps.unshift(appData);
+                    }
+                    this.saveLocally();
+                    App.render();
                 }
-                saveAppsLocally();
-                renderApps();
-            }
-            closeModal();
-        }
+            },
 
-        async function deleteApp(id) {
-            if (confirm('Tem a certeza que quer excluir esta aplicação?')) {
-                if (isFirebaseAvailable) {
-                    if (!userId) return;
+            async deleteApp(id) {
+                if (isFirebaseAvailable && this.userId) {
                     try {
-                        const appDocRef = doc(db, `artifacts/${appId}/users/${userId}/apps`, id);
-                        await deleteDoc(appDocRef);
-                        showNotification('Aplicação excluída.', 'success');
+                        await deleteDoc(doc(this.appsCollectionRef, id));
+                        UI.showNotification('Aplicação excluída.', 'success');
                     } catch (error) {
                         console.error("Erro ao excluir da nuvem: ", error);
-                        showNotification('Erro ao excluir.', 'error');
+                        UI.showNotification('Erro ao excluir.', 'error');
                     }
                 } else {
-                    apps = apps.filter(a => a.id != id);
-                    saveAppsLocally();
-                    renderApps();
-                    showNotification('Aplicação excluída.', 'success');
+                    this.apps = this.apps.filter(a => a.id != id);
+                    this.saveLocally();
+                    App.render();
+                    UI.showNotification('Aplicação excluída.', 'success');
                 }
-            }
-        }
-        
-        function setupRealtimeListener(uid) {
-            userId = uid;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            appsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/apps`);
-            const q = query(appsCollectionRef, orderBy('createdAt', 'desc'));
+            },
 
-            onSnapshot(q, (snapshot) => {
-                apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderApps();
-            }, (error) => {
-                console.error("Erro ao carregar: ", error);
-                showNotification('Não foi possível carregar as aplicações.', 'error');
-            });
-        }
+            loadLocally() {
+                const savedApps = localStorage.getItem(this.STORAGE_KEY);
+                this.apps = savedApps ? JSON.parse(savedApps) : [];
+                App.render();
+            },
 
-        function handleDashboardClick(e) {
-            const editBtn = e.target.closest('.edit-btn');
-            const deleteBtn = e.target.closest('.delete-btn');
-            if (editBtn) {
-                const app = apps.find(a => a.id == editBtn.dataset.id);
-                openModal(app);
+            saveLocally() {
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.apps));
             }
-            if (deleteBtn) {
-                deleteApp(deleteBtn.dataset.id);
-            }
-        }
-        
-        function saveAppsLocally() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
-        }
+        };
 
-        function loadAppsLocally() {
-            const savedApps = localStorage.getItem(STORAGE_KEY);
-            apps = savedApps ? JSON.parse(savedApps) : [];
-            renderApps();
-        }
-        
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                htmlEl.classList.add('dark');
-                elements.themeToggle.innerHTML = '☀️';
-            } else {
-                htmlEl.classList.remove('dark');
-                elements.themeToggle.innerHTML = '🌙';
-            }
-        }
-        function setSignature() {
-             elements.signature.textContent = `Feito por HAlexandre em 01/08/2025 às 17:45`;
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            if (isFirebaseAvailable) {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+        // --- Módulo Principal da Aplicação ---
+        const App = {
+            searchTerm: '',
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        setupRealtimeListener(user.uid);
-                    } else {
-                        try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                        } catch (error) {
-                            console.error("Falha na autenticação:", error);
-                            showNotification('Não foi possível conectar à base de dados.', 'error');
-                        }
+            async init() {
+                UI.loadTheme();
+                UI.setSignature();
+                this.setupEventListeners();
+                await Storage.init();
+            },
+
+            render() {
+                UI.renderApps(Storage.apps, this.searchTerm);
+            },
+
+            setupEventListeners() {
+                const { dom } = UI;
+                [dom.addAppBtn, dom.emptyStateBtn].forEach(btn => btn.addEventListener('click', () => UI.openModal()));
+                [dom.closeModalBtn, dom.cancelBtn].forEach(btn => btn.addEventListener('click', () => UI.closeModal()));
+                dom.modal.addEventListener('click', (e) => { if (e.target === dom.modal) UI.closeModal(); });
+                
+                dom.appForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const appData = {
+                        id: dom.formInputs.id.value,
+                        title: dom.formInputs.title.value.trim(),
+                        description: dom.formInputs.description.value.trim(),
+                        link: dom.formInputs.link.value.trim(),
+                        category: dom.formInputs.category.value,
+                    };
+                    Storage.saveApp(appData);
+                    UI.closeModal();
+                });
+
+                dom.dashboardGrid.addEventListener('click', (e) => {
+                    const editBtn = e.target.closest('.edit-btn');
+                    const deleteBtn = e.target.closest('.delete-btn');
+                    const copyBtn = e.target.closest('.copy-btn');
+                    const card = e.target.closest('.app-card');
+
+                    if (!card) return;
+                    const app = Storage.apps.find(a => a.id == card.dataset.id);
+
+                    if (editBtn) UI.openModal(app);
+                    if (deleteBtn && confirm('Tem a certeza que quer excluir esta aplicação?')) Storage.deleteApp(app.id);
+                    if (copyBtn) {
+                        const tempTextarea = document.createElement('textarea');
+                        tempTextarea.value = app.link;
+                        document.body.appendChild(tempTextarea);
+                        tempTextarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempTextarea);
+                        UI.showNotification('Link copiado!');
                     }
                 });
-            } else {
-                console.log("Firebase não configurado. A usar armazenamento local.");
-                loadAppsLocally();
+
+                dom.searchInput.addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    this.render();
+                });
+
+                dom.themeToggle.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    const isDark = document.documentElement.classList.contains('dark');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                    dom.themeToggle.innerHTML = isDark ? '☀️' : '🌙';
+                });
             }
+        };
 
-            [elements.addAppBtn, elements.emptyStateBtn].forEach(btn => btn.addEventListener('click', () => openModal()));
-            [elements.closeModalBtn, elements.cancelBtn].forEach(btn => btn.addEventListener('click', closeModal));
-            elements.modal.addEventListener('click', (e) => { if (e.target === elements.modal) closeModal(); });
-            elements.appForm.addEventListener('submit', handleFormSubmit);
-            elements.dashboardGrid.addEventListener('click', handleDashboardClick);
-            elements.searchInput.addEventListener('input', (e) => {
-                searchTerm = e.target.value.toLowerCase();
-                renderApps();
-            });
-            elements.themeToggle.addEventListener('click', () => {
-                htmlEl.classList.toggle('dark');
-                localStorage.setItem('theme', htmlEl.classList.contains('dark') ? 'dark' : 'light');
-                elements.themeToggle.innerHTML = htmlEl.classList.contains('dark') ? '☀️' : '🌙';
-            });
-
-            loadTheme();
-            setSignature();
-        });
+        // --- Ponto de Entrada ---
+        document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
 </html>
